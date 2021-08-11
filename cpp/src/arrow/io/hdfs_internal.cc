@@ -29,6 +29,7 @@
 // of the BSD license. See the LICENSE file for details.
 
 #include "arrow/io/hdfs_internal.h"
+#include <unistd.h>
 
 #include <cstdint>
 #include <cstdlib>
@@ -278,7 +279,13 @@ LibHdfsShim libhdfs_shim;
 
 }  // namespace
 
+hdfsFile hdfsOpenFileAdapter(hdfsFS fs, const char* path, int flags, int bufferSize,
+                             short replication, tSize blocksize) {
+  return hdfsOpenFile(fs, path, flags, bufferSize, replication, blocksize);
+}
+
 Status LibHdfsShim::GetRequiredSymbols() {
+#ifndef ARROW_NATIVE_HDFS
   GET_SYMBOL_REQUIRED(this, hdfsNewBuilder);
   GET_SYMBOL_REQUIRED(this, hdfsBuilderSetNameNode);
   GET_SYMBOL_REQUIRED(this, hdfsBuilderSetNameNodePort);
@@ -307,9 +314,41 @@ Status LibHdfsShim::GetRequiredSymbols() {
   GET_SYMBOL_REQUIRED(this, hdfsSeek);
   GET_SYMBOL_REQUIRED(this, hdfsTell);
   GET_SYMBOL_REQUIRED(this, hdfsWrite);
+#else
+  this->hdfsNewBuilder = ::hdfsNewBuilder;
+  this->hdfsBuilderSetNameNode = ::hdfsBuilderSetNameNode;
+  this->hdfsBuilderSetNameNodePort = ::hdfsBuilderSetNameNodePort;
+  this->hdfsBuilderSetUserName = ::hdfsBuilderSetUserName;
+  this->hdfsBuilderSetKerbTicketCachePath = ::hdfsBuilderSetKerbTicketCachePath;
+  this->hdfsBuilderSetForceNewInstance = ::hdfsBuilderSetForceNewInstance;
+  this->hdfsBuilderConfSetStr = ::hdfsBuilderConfSetStr;
+  this->hdfsBuilderConnect = ::hdfsBuilderConnect;
+  this->hdfsCreateDirectory = ::hdfsCreateDirectory;
+  this->hdfsDelete = ::hdfsDelete;
+  this->hdfsDisconnect = ::hdfsDisconnect;
+  this->hdfsExists = ::hdfsExists;
+  this->hdfsFreeFileInfo = ::hdfsFreeFileInfo;
+  this->hdfsGetCapacity = ::hdfsGetCapacity;
+  this->hdfsGetUsed = ::hdfsGetUsed;
+  this->hdfsGetPathInfo = ::hdfsGetPathInfo;
+  this->hdfsListDirectory = ::hdfsListDirectory;
+  this->hdfsChown = ::hdfsChown;
+  this->hdfsChmod = ::hdfsChmod;
+
+  // File methods
+  this->hdfsCloseFile = ::hdfsCloseFile;
+  this->hdfsFlush = ::hdfsFlush;
+  this->hdfsOpenFile = hdfsOpenFileAdapter;
+  this->hdfsRead = ::hdfsRead;
+  this->hdfsSeek = ::hdfsSeek;
+  this->hdfsTell = ::hdfsTell;
+  this->hdfsWrite = ::hdfsWrite;
+#endif
 
   return Status::OK();
 }
+
+
 
 Status ConnectLibHdfs(LibHdfsShim** driver) {
   static std::mutex lock;
@@ -323,6 +362,7 @@ Status ConnectLibHdfs(LibHdfsShim** driver) {
 
     shim->Initialize();
 
+#ifndef ARROW_NATIVE_HDFS
     ARROW_ASSIGN_OR_RAISE(auto libjvm_potential_paths, get_potential_libjvm_paths());
     ARROW_ASSIGN_OR_RAISE(libjvm_handle, try_dlopen(libjvm_potential_paths, "libjvm"));
 
@@ -330,6 +370,7 @@ Status ConnectLibHdfs(LibHdfsShim** driver) {
     ARROW_ASSIGN_OR_RAISE(shim->handle, try_dlopen(libhdfs_potential_paths, "libhdfs"));
   } else if (shim->handle == nullptr) {
     return Status::IOError("Prior attempt to load libhdfs failed");
+#endif
   }
 
   *driver = shim;

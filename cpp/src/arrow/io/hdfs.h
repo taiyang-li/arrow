@@ -214,6 +214,7 @@ class ARROW_EXPORT HadoopFileSystem : public FileSystem {
   friend class HdfsOutputStream;
 
   class ARROW_NO_EXPORT HadoopFileSystemImpl;
+  class ARROW_NO_EXPORT HadoopFileSystemNativeImpl;
   std::unique_ptr<HadoopFileSystemImpl> impl_;
 
   HadoopFileSystem();
