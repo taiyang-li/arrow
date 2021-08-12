@@ -351,8 +351,9 @@ Result<HdfsOptions> HdfsOptions::FromUri(const Uri& uri) {
     options_map.emplace(kv.first, kv.second);
   }
 
-  std::string host;
-  host = uri.scheme() + "://" + uri.host();
+  std::string host = uri.host();
+  // host = uri.scheme() + "://" + uri.host();
+  // host = uri.host();
 
   // configure endpoint
   const auto port = uri.port();
