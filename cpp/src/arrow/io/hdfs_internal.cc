@@ -29,6 +29,8 @@
 // of the BSD license. See the LICENSE file for details.
 
 #include "arrow/io/hdfs_internal.h"
+
+#include <hdfs/hdfs.h>
 #include <unistd.h>
 
 #include <cstdint>
@@ -347,8 +349,6 @@ Status LibHdfsShim::GetRequiredSymbols() {
 
   return Status::OK();
 }
-
-
 
 Status ConnectLibHdfs(LibHdfsShim** driver) {
   static std::mutex lock;

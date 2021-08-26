@@ -20,7 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <hdfs.h>
+#include <hdfs/hdfs.h>
 
 #include "arrow/util/visibility.h"
 #include "arrow/util/windows_compatibility.h"  // IWYU pragma: keep
